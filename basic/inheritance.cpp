@@ -1,4 +1,4 @@
-#include <iostream>
+#include "global.h"
 
 /*
  * === Test 1: inheritance order ===
@@ -38,17 +38,15 @@ namespace Test1
         double getCost() const { return m_cost; }
     };
 
-    void run(void)
+    //void run(void)
+    //void run(int i, void (*fn)(void))
+    void fn(void)
     {
-        std::cout << "=== Test 1 ===\n\n";
-
         std::cout << "Instantiating Base\n";
         Base cBase;
 
         std::cout << "Instantiating Derived\n";
         Derived cDerived;
-
-        std::cout << "\n=== Test 1: end ===\n\n";
     }
 }
 
@@ -115,15 +113,11 @@ namespace Test2
         }
     };
 
-    void run(void)
+    void fn(void)
     {
-        std::cout << "=== Test 2 ===\n\n";
-
         D2_Pri pri;
         D2_Pro pro;
         D2_Pub pub;
-
-        std::cout << "\n=== Test 2: end ===\n\n";
     }
 }
 
@@ -218,10 +212,8 @@ namespace Test3
         using Base::proFun;
     };
 
-    void run(void)
+    void fn(void)
     {
-        std::cout << "=== Test 3 ===\n\n";
-
         Base base(5);
         Derived derived(7);
 
@@ -232,14 +224,12 @@ namespace Test3
         //derived.hide();   // it's hided in Derived class, not compiling
         std::cout << derived; // friend func to call Base value
         derived.proFun();   // call a Base protected function
-
-        std::cout << "\n=== Test 3: end ===\n\n";
     }
 }
 
 int main()
 {
-    Test1::run(); // inheritance order
-    Test2::run(); // accesor specifiers, compiling only
-    Test3::run(); // inheritance function overiding and hiding
+    run(1, &(Test1::fn)); // inheritance order
+    run(2, &(Test2::fn)); // accesor specifiers, compiling only
+    run(3, &(Test3::fn)); // inheritance function overiding and hiding
 }

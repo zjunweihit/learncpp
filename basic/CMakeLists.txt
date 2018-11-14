@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.0)
 
-add_executable(inheritance inheritance.cpp)
+add_executable(inheritance inheritance.cpp global.cpp)
 
 # matches AppleClang and Clang
 if (CMAKE_COMPILER_IS_CLANGXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
