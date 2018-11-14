@@ -149,7 +149,7 @@ namespace Test3
 
         // only in base class
         // Note: if it's defined as private func, it will cause compiling error
-        //       since, it cannot be accessed by Derived class, if Derived class
+        //       since it cannot be accessed by Derived class, if Derived class
         //       calls it.
         void identify() { std::cout << "The function in Base only\n"; }
 
@@ -177,8 +177,8 @@ namespace Test3
         int m_cost;
 
     public:
-        // Note: we cannot initialize m_value using intialization list
-        // calling Base(value) or assigning value in constructor function
+        // Note: we cannot initialize m_value using intialization list,
+        // but call Base(value) or assign value in constructor function
         // Since it's Base member (Base must intialize it)
         Derived(int value)
             : Base(value), m_cost(2 * value)
@@ -241,6 +241,5 @@ int main()
 {
     Test1::run(); // inheritance order
     Test2::run(); // accesor specifiers, compiling only
-    Test3::run(); // accesor specifiers, compiling only
+    Test3::run(); // inheritance function overiding and hiding
 }
-
