@@ -1,4 +1,5 @@
 #include "global.h"
+#include <string>
 
 /*
  * === Test 1: function template ===
@@ -135,18 +136,161 @@ namespace Test1
         std::cout << intArray.getCount() << "\t" << doubleArray.getCount() << "\n";
     }
 
+    void fn(void)
+    {
+        std::cout << "\n <<< template function >>>\n";
+        template_function();
+
+        std::cout << "\n <<< template class >>>\n";
+        template_class();
+
+        // Splitting up template classes into separate files, no exmaple here
+    }
+};
+
+namespace Test2
+{
+    template <class T>
+    class Storage
+    {
+    private:
+        T m_value;
+    public:
+        Storage(T val) : m_value(val)
+        {
+        }
+
+        void print(void)
+        {
+            std::cout << m_value << "\n";
+        }
+    };
+
+    // The template <> tells the compiler that this is a template function,
+    // but that there are no template parameters (since in this case,
+    // we’re explicitly specifying all of the types).
+    // Some compilers may allow you to omit this, but it’s proper to include it.
+    template <>
+    void Storage<double>::print(void)
+    {
+        std::cout << "double: " << std::scientific << m_value << "\n";
+    }
+
+    void func_template_specialization(void)
+    {
+        Storage<int> S1(123);
+        Storage<double> S2(123.456);
+
+        S1.print();
+        S2.print();
+    }
+
+    // class template specification
+    template <class T>
+    class Storage8
+    {
+    private:
+        T m_array[8];
+    public:
+        Storage8()
+        {
+            std::cout << "This is not bool type class\n";
+        }
+    };
+
+    template <>
+    class Storage8<bool>
+    {
+    // what follows is just standard class implementation details
+    private:
+        unsigned char m_data;
+    public:
+        Storage8()
+        {
+            std::cout << "This is bool type class\n";
+        }
+    };
+
+    void class_template_specialization(void)
+    {
+        Storage8<int> intS;
+        Storage8<bool> boolS;
+    }
 
     void fn(void)
     {
-        std::cout << "\ntemplate function" << "\n";
-        template_function();
+        std::cout << "\n <<< function template specialization >>>\n";
+        func_template_specialization();
 
-        std::cout << "\ntemplate class" << "\n";
-        template_class();
+        std::cout << "\n <<< class template specialization >>>\n";
+        class_template_specialization();
+        // omit the class template specification
+    }
+};
+
+namespace Test3
+{
+    template <class T, int size>
+    class Array
+    {
+    private:
+        T m_array[size];
+    public:
+        T* getArray(void) { return m_array; }
+        T& operator[](int index)
+        {
+            assert(index >= 0);
+            return m_array[index];
+        }
+    };
+
+    // a new template function rather than a member funtion
+    // Note: it doesn's work for a string
+    template <typename T, int size>
+    void print(Array<T, size> &array)
+    {
+        for (int i = 0; i < size; ++i)
+            std::cout << array[i] << ' ';
+        std::cout << "\n";
+    }
+
+    // overload of print() function for partially specialized Array<char, size>
+    // Note that as of C++14, partial template specialization can only be
+    // used with classes, not template functions (functions must be fully
+    // specialized).
+    template <int size>
+    void print(Array<char, size> &array)
+    {
+        for (int i = 0; i < size; ++i)
+            std::cout << array[i];
+        std::cout << "\n";
+    }
+
+    void partial_template_func(void)
+    {
+        Array<int, 4> int4;
+
+        for (int i = 0; i < 4; ++i)
+            int4[i] = i;
+        print(int4);
+
+        Array<char, 14> char14;
+
+        //strcpy_s(char14.getArray(), 14, "hello, world!"); // compiling error in Mac
+        strncpy(char14.getArray(), "hello, world!", 14);
+        //strcpy(char14.getArray(), "hello, world!");
+        print(char14);
+    }
+
+    void fn(void)
+    {
+        partial_template_func();
     }
 };
 
 int main()
 {
-    run(1, &(Test1::fn));
+    run(1, &(Test1::fn)); // template function and class
+    run(2, &(Test2::fn)); // template and class specialization
+    run(3, &(Test3::fn)); // partial template sptemplate and class specialization
 }
