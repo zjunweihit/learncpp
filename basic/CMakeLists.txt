@@ -15,3 +15,7 @@ if (CMAKE_COMPILER_IS_CLANGXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
     message(STATUS "optional:-std=c++11")
 endif()
+
+if (CMAKE_BUILD_TYPE STREQUAL Debug)
+    add_definitions(-DDEBUG)
+endif()
