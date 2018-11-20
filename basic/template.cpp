@@ -266,6 +266,8 @@ namespace Test3
         std::cout << "\n";
     }
 
+    // Partial template specialization is not used all that often
+    // (but can be useful in specific cases).
     void partial_template_func(void)
     {
         Array<int, 4> int4;
@@ -285,6 +287,7 @@ namespace Test3
     void fn(void)
     {
         partial_template_func();
+        // skip Partial template specialization for member functions
     }
 };
 
@@ -292,5 +295,5 @@ int main()
 {
     run(1, &(Test1::fn)); // template function and class
     run(2, &(Test2::fn)); // template and class specialization
-    run(3, &(Test3::fn)); // partial template sptemplate and class specialization
+    run(3, &(Test3::fn)); // partial template function specialization
 }
