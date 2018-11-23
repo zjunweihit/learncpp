@@ -10,6 +10,9 @@ target_link_libraries(inheritance global)
 add_executable(template template.cpp)
 target_link_libraries(template global)
 
+add_executable(virtual_func virtual_func.cpp)
+target_link_libraries(virtual_func global)
+
 # matches AppleClang and Clang
 if (CMAKE_COMPILER_IS_CLANGXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
