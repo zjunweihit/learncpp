@@ -1,5 +1,6 @@
 #include "global.h"
 #include <string>
+#include <cstring>
 
 /*
  * === Test 1: function template ===
