@@ -220,8 +220,72 @@ namespace Test2
     }
 }
 
+/*
+ * === Test 3: destructure function ===
+ * (1) If it's necessary to deallocate the memory, the own destructor is required.
+ *     If it's in inheritance, the base destructor should be vitual.
+ * (2) Whenever you are dealing with inheritance, should make any explicit
+ *     destructors virtual.
+ * (3) Rarely we may want to ignore the virtualization of a function.
+ *     But you can call base function directly
+ * (4) A base class destructor should be either public and virtual, or
+ *     protected and nonvirtual, which smart pointor should be used.
+ * Note:
+ *   (1) If you intend your class to be inherited from, make sure your destructor is virtual.
+ *   (2) If you do not intend your class to be inherited from, mark your class as final.
+ *       This will prevent other classes from inheriting from it in the first place.
+ */
+namespace Test3
+{
+    class Base
+    {
+    public:
+        //~Base() // not virtual, it will be called
+        virtual ~Base() // virtual, the derived destructor will be called firstly
+        {
+            std::cout << "Calling ~Base()" << std::endl;
+        }
+
+        virtual const char* getName() { return "Base"; }
+    };
+
+    class Derived: public Base
+    {
+    private:
+        int* m_array;
+
+    public:
+        Derived(int length)
+        {
+            m_array = new int[length];
+        }
+
+        //~Derived() // note: not virtual
+        virtual ~Derived() // note: virtual, it will be called
+        {
+            std::cout << "Calling ~Derived()" << std::endl;
+            delete[] m_array;
+        }
+
+        virtual const char* getName() { return "Derived"; }
+    };
+
+    void fn(void)
+    {
+        Derived *derived = new Derived(5);
+        Base *base = derived ;
+
+        std::cout << "calling base function directly, ignoring virtualization\n";
+        std::cout << base->Base::getName() << "\n";
+
+        std::cout << "\ndestructure Derived object by Base pointer\n";
+        delete base;
+    }
+}
+
 int main()
 {
     run(1, &(Test1::fn)); // virtual function basis
-    run(2, &(Test2::fn)); // override and final specifier
+    run(2, &(Test2::fn)); // override, final and covariant specifier
+    run(3, &(Test3::fn)); // 
 }
