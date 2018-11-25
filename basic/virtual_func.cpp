@@ -231,9 +231,9 @@ namespace Test2
  * (4) A base class destructor should be either public and virtual, or
  *     protected and nonvirtual, which smart pointor should be used.
  * Note:
- *   (1) If you intend your class to be inherited from, make sure your destructor is virtual.
- *   (2) If you do not intend your class to be inherited from, mark your class as final.
- *       This will prevent other classes from inheriting from it in the first place.
+ *   - If you intend your class to be inherited from, make sure your destructor is virtual.
+ *   - If you do not intend your class to be inherited from, mark your class as final.
+ *     This will prevent other classes from inheriting from it in the first place.
  */
 namespace Test3
 {
@@ -282,10 +282,100 @@ namespace Test3
         delete base;
     }
 }
+/*
+ * Early binding: when compiling, it knows where is the function address
+ * Late binding: when program is running, it knows the function address
+ -
+ *   // Set pFcn to point to the function the user chose
+ *   switch (op)
+ *   {
+ *       case 0: pFcn = add; break;
+ *       case 1: pFcn = subtract; break;
+ *       case 2: pFcn = multiply; break;
+ *   }
+ *
+ *   // Call the function that pFcn is pointing to with x and y as parameters
+ *   // This uses late binding
+ *   std::cout << "The answer is: " << pFcn(x, y) << std::endl;
+ -
+ * The virtual table is a lookup table of functions used to resolve function
+ * calls in a dynamic/late binding manner.
+ * it's also named, such as “vtable”, “virtual function table”, “virtual method table”,
+ * or “dispatch table”.
+ * (1) every class that uses the virtual functions has its own virtual table
+ *     - the virtual table is simply a static array, set up on compiling
+ *     - each entry is a function pointer to the most-derived accessible function
+ * (2) compiler adds a hidden pointer to the base class, *__vptr.
+ *     - *__vptr is set automatically when a class instance is created.
+ *     - unlike *this, which is a function parameter used by compiler to resolve
+ *       self-references, *__vptr is a real pointer, each class allcats one more
+ *       pointer size.
+ *     - *__vptr is inherited by derived classes.
+ * Calling a virtual function is slower than a non-virtual function.
+ * Any class that uses virtual funtions has a __vptr, bigger by 1 pointer.
+ * But for moden computer, it's much less significant, although still has perf cost.
+ */
+namespace Test4 // compiling only for now
+{
+    /*
+     * Compiler creates 3 virtual tables for each class(Base, D1, D2)
+     * and adds a hidden pointer to the most base class(Base).
+     *
+     * When a class object is created, *__vptr is set to point to the virtual
+     * table for that class.
+     */
+
+    class Base
+    {
+    public:
+        //FunctionPointer *__vptr;
+        virtual void function1() {};
+        virtual void function2() {};
+    };
+
+    class D1: public Base
+    {
+    public:
+        virtual void function1() {};
+    };
+
+    class D2: public Base
+    {
+    public:
+        virtual void function2() {};
+    };
+    //      +--------------------+
+    //      |       Base         |
+    //      |                    |         +--------------+
+    //      | *__vptr(inherit) --+-------->| Base VTable  |
+    // +--->| virtual function1()|<-----+  |              |
+    // | +->| virtual function2()|<-+   +--+-function1()  |
+    // | |  +--------------------+  +------+-function2()  |
+    // | |                                 +--------------+
+    // | +----------------------------------------------------+
+    // |    +--------------------+                            |
+    // |    | D1: public Base    |                            |
+    // |    |                    |         +--------------+   |
+    // |    | *__vptr(inherit) --+-------->| D1 VTable    |   |
+    // |    | virtual function1()|<----+   |              |   |
+    // |    +--------------------+     +---+-function1()  |   |
+    // |                                   | function2()--+---+
+    // |    +--------------------+         +--------------+
+    // |    | D2: public Base    |
+    // |    |                    |          +--------------+
+    // |    | *__vptr(inherit) --+--------->| D2 VTable    |
+    // |    | virtual function2()|<----+    |              |
+    // |    +--------------------+     |    | function1()--+--+
+    // |                               +----+-function2()  |  |
+    // |                                    +--------------+  |
+    // |                                                      |
+    // +------------------------------------------------------+
+}
 
 int main()
 {
     run(1, &(Test1::fn)); // virtual function basis
     run(2, &(Test2::fn)); // override, final and covariant specifier
-    run(3, &(Test3::fn)); // 
+    run(3, &(Test3::fn)); // destructor function
+    //run(4, &(Test4::fn)); // compiling only for now
 }
