@@ -3,6 +3,7 @@
 
 /*
  * === Test 1: virutal function and polymorphism ===
+ *
  * 1. Calling a virtual function resolves to the most-derived function that
  *    exists between the base and derived class, known as polymorphism.
  * 2. A derived function is considered a match if it has the same signature
@@ -114,6 +115,7 @@ namespace Test1
 
 /*
  * === Test 2: override, final, covariant specifier(C++11) ===
+ *
  * overide:
  *   (1) use it as much as possible
  *   (2) applied to any override function by placing the specifier in the
@@ -222,6 +224,7 @@ namespace Test2
 
 /*
  * === Test 3: destructure function ===
+ *
  * (1) If it's necessary to deallocate the memory, the own destructor is required.
  *     If it's in inheritance, the base destructor should be vitual.
  * (2) Whenever you are dealing with inheritance, should make any explicit
@@ -283,6 +286,8 @@ namespace Test3
     }
 }
 /*
+ * === Test 4: virutal table ===
+ *
  * Early binding: when compiling, it knows where is the function address
  * Late binding: when program is running, it knows the function address
  -
@@ -372,10 +377,120 @@ namespace Test4 // compiling only for now
     // +------------------------------------------------------+
 }
 
+/*
+ * === Test 5: pure virutal function and abstract base class ===
+ *
+ * A pure virtual function (or abstract function) has no function body, which
+ * is placeholder that will/MUST be implemented in derived classes.
+ * i.e. Set to 0
+ *
+ *      virtual int getValue() = 0; // a pure virtual function
+ *
+ * A class has one or more pure virtual function is an abstract base class.
+ * It means the class *cannot be instantiated*! Compiling error.
+ * It can implement the function body outside of the class as a default implementation,
+ * but it's still considered as an abstract base class.
+ *
+ * Abstract base class has virtual table as well.
+ * The virtual table entry for a pure virtual function will generally either
+ * contain a null pointer, or point to a generic function that prints an error
+ * (sometimes this function is named __purecall) if no override is provided.
+ */
+namespace Test5
+{
+    class Animal // This Animal is an abstract base class
+    {
+    protected:
+        std::string m_name;
+
+    public:
+        Animal(std::string name)
+            : m_name(name)
+        { }
+
+        std::string getName() { return m_name; }
+
+        virtual const char* speak() = 0; // a pure virtual function
+    };
+
+    // Although we can set function body for a pure virtual function
+    // Animal is still a base class, cannot be instantiated.
+    // If we have to do so, it must be defined out of class instead of inline function
+    // It could provide a default implementation.
+    const char* Animal::speak() { return "I'm an Animal"; }
+
+    class Cow: public Animal
+    {
+    public:
+        Cow(std::string name)
+            : Animal(name)
+        { }
+
+        // If we forgot to redefine speak(), it will comiple error
+        // error: cannot declare variable ‘cow’ to be of abstract type ‘Test5::Cow’
+        // note:   because the following virtual functions are pure within ‘Test5::Cow’:
+        // note:        virtual const char* Test5::Animal::speak()
+        virtual const char* speak() { return "Moo"; }
+    };
+
+    class Dragonfly: public Animal
+    {
+    public:
+        Dragonfly(std::string name)
+            : Animal(name)
+        { }
+        virtual const char* speak() { Animal::speak(); }
+    };
+
+    void fn(void)
+    {
+        // Compiling error as Animal is an abstract base class
+        //Animal A("Buzz");
+
+        Cow cow("Betsy");
+        std::cout << "Create Cow from Animal abstract base class\n";
+        std::cout << cow.getName() << " says " << cow.speak() << '\n';
+
+        Dragonfly dfly("Sally");
+        std::cout << "Create Dragonfly from Animal abstract base class\n";
+        std::cout << dfly.getName() << " says " << dfly.speak() << '\n';
+    }
+
+    // Interface class: every function is virtual and must be implemented in
+    // derived classes, even if it returns 0 directly.
+    //
+    // We can derive FileErrorLog and ScreenErrorLog from IErrorLog,
+    // and resolve the Error handling in the same way regardless of input error
+    // class
+    //
+    // class IErrorLog
+    // {
+    // public:
+    //     virtual bool openLog(const char *filename) = 0;
+    //     virtual bool closeLog() = 0;
+
+    //     virtual bool writeError(const char *errorMessage) = 0;
+
+    //     virtual ~IErrorLog() {}; // make a virtual destructor in case we delete an IErrorLog pointer, so the proper derived destructor is called
+    // };
+    //
+    // double mySqrt(double value, IErrorLog &log)
+    //{
+    //    if (value < 0.0)
+    //    {
+    //        log.writeError("Tried to take square root of value less than 0");
+    //        return 0.0;
+    //    }
+    //    else
+    //        return sqrt(value);
+    //}
+}
+
 int main()
 {
     run(1, &(Test1::fn)); // virtual function basis
     run(2, &(Test2::fn)); // override, final and covariant specifier
     run(3, &(Test3::fn)); // destructor function
-    //run(4, &(Test4::fn)); // compiling only for now
+    //run(4, &(Test4::fn)); // virutal table, compiling only for now
+    run(5, &(Test5::fn)); // pure virtual function and abstract base class
 }
