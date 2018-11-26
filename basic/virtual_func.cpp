@@ -486,6 +486,76 @@ namespace Test5
     //}
 }
 
+/*
+ * === Test 6: virutal base class ===
+ *
+ * For diamond issue of multiple inheritance, the base class will be constructed
+ * many times(twice here), virtual base class will fix it and construct once.
+ *
+ * The most-derived class(Copier) creates the base class(PoweredDevice).
+ *
+ * 1) virtual base classes are always created before non-virtual base classes,
+ *    which ensures all bases get created before their derived classes.
+ * 2) note that the Scanner and Printer constructors still have calls to the
+ *    PoweredDevice constructor. When creating an instance of Copier, these
+ *    constructor calls are simply ignored because Copier is responsible for
+ *    creating the PoweredDevice. But if we were to create an instance of
+ *    Scanner or Printer, those constructors would be used.
+ * 3) If a class inherits one or more classes that have virtual parents,
+ *    the most derived class is reponsible for contructing the vitual base class.
+ *    (Even though it's not a diamond inheritance.)
+ * 4) a virtual base class is always considered a direct base of its most derived
+ *    class. But classes inheriting the virtual base still need access to it.
+ *    the compiler creates a virtual table for each class directly inheriting
+ *    the virtual class (Printer and Scanner), pointing to the most derived class.
+ */
+namespace Test6
+{
+
+    class PoweredDevice
+    {
+    public:
+        PoweredDevice(int power)
+        {
+            std::cout << "PoweredDevice: " << power << '\n';
+        }
+    };
+
+    class Scanner: virtual public PoweredDevice // note: PoweredDevice is now a virtual base class
+    {
+    public:
+        Scanner(int scanner, int power)
+            : PoweredDevice(power) // this line is required to create Scanner objects, but ignored in this case
+        {
+            std::cout << "Scanner: " << scanner << '\n';
+        }
+    };
+
+    class Printer: virtual public PoweredDevice // note: PoweredDevice is now a virtual base class
+    {
+    public:
+        Printer(int printer, int power)
+            : PoweredDevice(power) // this line is required to create Printer objects, but ignored in this case
+        {
+            std::cout << "Printer: " << printer << '\n';
+        }
+    };
+
+    class Copier: public Scanner, public Printer
+    {
+    public:
+        Copier(int scanner, int printer, int power)
+            : PoweredDevice(power), // PoweredDevice is constructed here
+            Scanner(scanner, power), Printer(printer, power)
+        { }
+    };
+
+    void fn(void)
+    {
+        Copier copier(1, 2, 3);
+    }
+}
+
 int main()
 {
     run(1, &(Test1::fn)); // virtual function basis
@@ -493,4 +563,5 @@ int main()
     run(3, &(Test3::fn)); // destructor function
     //run(4, &(Test4::fn)); // virutal table, compiling only for now
     run(5, &(Test5::fn)); // pure virtual function and abstract base class
+    run(6, &(Test6::fn)); // virtual base class
 }
