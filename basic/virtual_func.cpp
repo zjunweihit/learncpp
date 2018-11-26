@@ -1,5 +1,5 @@
 #include "global.h"
-#include <string>
+#include <functional>
 
 /*
  * === Test 1: virutal function and polymorphism ===
@@ -556,6 +556,150 @@ namespace Test6
     }
 }
 
+/*
+ * === Test 7: object slicing ===
+ *
+ * The assigning of a Derived class object to a Base class object is called
+ * object slicing (or slicing for short).
+ *
+ * It may happen when pass a parameter to a function. And it's hard to debug
+ * if there is no print in virtual function.
+ */
+namespace Test7
+{
+    class Base
+    {
+    protected:
+        int m_value;
+
+    public:
+        Base(int value)
+            : m_value(value)
+        { }
+
+        virtual const char* getName() const { return "Base"; }
+        int getValue() const { return m_value; }
+    };
+
+    class Derived: public Base
+    {
+    public:
+        Derived(int value)
+            : Base(value)
+        { }
+
+        virtual const char* getName() const { return "Derived"; }
+    };
+
+    //void printName(const Base &base) // passed by reference, fine
+    void printName(const Base base) // passed by value, slicing
+    {
+        std::cout << "I am a " << base.getName() << "\n";
+    }
+
+    void vf_vector_slicing(void)
+    {
+        std::vector<Base> v;
+        // NOTE:
+        //   going to get the reference for derived object, but it doesn't work.
+        //   the elements of std::vector must be assignable, while reference is
+        //   cannot be reassigned (only initialized).
+        //
+        // std::vector<Base&> v;
+        //
+        // NOTE:
+        //   using a Base pointer for std::vector is working, but it's complicated
+        //   to manage the element's memory, at least should delete each one at last
+        //
+        // std::vector<Base*> v;
+        // v.push_back(new Base(5));
+        // for (int count = 0; count < v.size(); ++count)
+        //      delete v[count];
+        //
+        // NOTE:
+        //   Good news is that we can use std::reference_wrapper as reference
+        //   and it's assignable.
+
+        std::cout << "create Base(5)\n";
+        v.push_back(Base(5)); // add a Base object to our vector
+
+        std::cout << "create Derived(6)\n";
+        v.push_back(Derived(6)); // add a Derived object to our vector
+
+        // Print out all of the elements in our vector
+        std::cout << "traverse the vector:\n";
+        for (int count = 0; count < v.size(); ++count)
+            std::cout << "\tI am a " << v[count].getName() << " with value "
+                      << v[count].getValue() << "\n";
+    }
+
+    // Good news is that we can use std::reference_wrapper as reference
+    // NOTE:
+    //   1) std::reference_wrapper lives in the <functional> header
+    //   2) the object cannot be anonymous (since anonymous objects have
+    //      expression scope would leave the reference dangling).
+    //   3) using get() to get the member
+    void vf_vector_ref_wrapper(void)
+    {
+        std::cout << "create a vector by reference_wrapper\n";
+
+        // our vector is a vector of std::reference_wrapper wrapped Base (not Base&)
+        std::vector<std::reference_wrapper<Base>> v;
+
+        // b and d can't be anonymous objects
+        std::cout << "create Base(5) explicitly\n";
+        Base b(5);
+        std::cout << "create Derived(6) explicitly\n";
+        Derived d(6);
+
+        v.push_back(b); // add a Base object to our vector
+        v.push_back(d); // add a Derived object to our vector
+
+        // we use .get() to get our element from the wrapper
+        std::cout << "traverse the vector:\n";
+        for (int count = 0; count < v.size(); ++count)
+            std::cout << "\tI am a " << v[count].get().getName() << " with value "
+                      << v[count].get().getValue() << "\n";
+    }
+
+    // Frankenobject -- composed of parts of multiple objects
+    void vf_frankenobject(void)
+    {
+        std::cout << "create d1 Derived(5)\n";
+        Derived d1(5);
+
+        std::cout << "create d2 Derived(6)\n";
+        Derived d2(6);
+
+        std::cout << "Base b gets Base slicing of d2(6)\n";
+        Base &b = d2;
+
+        std::cout << "assign d1 Base to b, i.e. d2\n";
+        b = d1; // this line is problematic
+        std::cout << "d2 is " << d2.getValue() << "\n";
+    }
+
+    void fn(void)
+    {
+        Derived derived(5);
+        Base base = derived; // slice off the derived part for base
+
+        std::cout << "Slicing assignment\n";
+        std::cout << "base is a " << base.getName() << " and has value "
+                  << base.getValue() << "\n";
+
+        std::cout << "\nSlicing function\n";
+        printName(derived);
+
+        std::cout << "\nSlicing vector\n";
+        vf_vector_slicing();
+        vf_vector_ref_wrapper();
+
+        std::cout << "\nSlicing Frankenobject\n";
+        vf_frankenobject();
+    }
+}
+
 int main()
 {
     run(1, &(Test1::fn)); // virtual function basis
@@ -564,4 +708,5 @@ int main()
     //run(4, &(Test4::fn)); // virutal table, compiling only for now
     run(5, &(Test5::fn)); // pure virtual function and abstract base class
     run(6, &(Test6::fn)); // virtual base class
+    run(7, &(Test7::fn)); // object slicing
 }

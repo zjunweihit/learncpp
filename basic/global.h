@@ -3,6 +3,8 @@
 
 #include <iostream>
 #include <assert.h>
+#include <string>
+#include <vector>
 
 void run(int i, void (*fn)(void));
 
