@@ -439,7 +439,7 @@ namespace Test5
         Dragonfly(std::string name)
             : Animal(name)
         { }
-        virtual const char* speak() { Animal::speak(); }
+        virtual const char* speak() { return Animal::speak(); }
     };
 
     void fn(void)
