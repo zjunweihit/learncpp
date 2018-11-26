@@ -700,6 +700,171 @@ namespace Test7
     }
 }
 
+/*
+ * === Test 8: dynamic cast ===
+ *
+ * When to use it:
+ *   derived class has a specific function, not vitual function,
+ *   but we only have base reference or pointer, how to access the derived::function()
+ *
+ *   dynamic_cast converts base-class pointer into derived-class pointer.
+ *
+ * upcasting:
+ *   C++ will implicitly let you convert a Derived pointer into a Base pointer
+ *   (in fact, getObject() does just that). This process is called upcasting.
+ * downcasting:
+ *   dynamic_cast base pointer into derived pointer.
+ *
+ * dynamic_cast error check:
+ *   If dynmaic_cast fails, it returns NULL pointer, e.g. pointer to a Base
+ *   instead of Derived object.
+ *
+ * NOTE:
+ *   there are several cases where downcasting using dynamic_cast will not work:
+ *   1) With protected or private inheritance.
+ *   2) For classes that do not declare or inherit any virtual functions
+ *      (and thus don’t have a virtual table). Seems not??
+ *   3) In certain cases involving virtual base classes. Seems not??
+ *
+ * Downcasting with static_cast:
+ *   It cannot check in runtime, so if you can ensure it will always be sucess.
+ *   static_cast is acceptable and faster.
+ *   In case the Base pointer isn's pointing to a Derived object, will result in
+ *   undefined behavior.
+ *
+ * When to use static_cast or dynamic_cast:
+ *   if virtual function works, use virtual functions
+ *   if it's for downcasting, use dynamic_cast
+ *   otherwise, static_cast
+ * Someone thinks dynmaic_cast is evil, should use virtual function
+ * sometimes doencasting is a better choice:
+ *   When you can not modify the base class to add a virtual function.
+ *     (e.g. in standard library)
+ *   When you need access to something that is derived-class specific.
+ *     (access function in Derived class only)
+ *   When adding a virtual function to your base class doesn’t make sense.
+ *     (no appropriate value in base class, or use pure virtual function,
+ *      if it doesn's need to instantiate the base class)
+ */
+
+namespace Test8
+{
+    // Class identifier for static_cast
+    enum ClassID
+    {
+        BASE,
+        DERIVED
+            // Others can be added here later
+    };
+
+    class Base
+    {
+    protected:
+        int m_value;
+
+    public:
+        Base(int value)
+            : m_value(value)
+        { }
+
+        virtual ~Base() {}
+
+        // verify virtual function for dynmaic_cast, compiling and executing are OK.
+        virtual int getValue() { return m_value; }
+
+        // static_cast identifier
+        virtual ClassID getClassID() { return BASE; }
+    };
+
+    // compiling error if derived class inherits Base protectedly or privately.
+    //class Derived : protected Base
+    //class Derived : private Base
+    //class Derived : virtual public Base // virtual class works??
+    class Derived : public Base
+    {
+    protected:
+        std::string m_name;
+
+    public:
+        Derived(int value, std::string name)
+            : Base(value), m_name(name)
+        { }
+
+        // this specifc funtion for Derived class
+        const std::string& getName() { return m_name; }
+
+        // virtual function from Base
+        virtual int getValue() { return m_value; }
+
+        // static_cast identifier
+        virtual ClassID getClassID() { return DERIVED; }
+    };
+
+    Base* getObject(bool bReturnDerived)
+    {
+        if (bReturnDerived)
+            return new Derived(1, "Derived class");
+        else
+            return new Base(2);
+    }
+
+    void vf_dynamic_cast(void)
+    {
+        Base *b = getObject(true);
+
+        Derived *d = dynamic_cast<Derived*>(b);
+
+        // Error check: NULL if it fails, that b is pointing to a Base object
+        // rather than Derived object.
+        if (d) {
+            std::cout << "The derived name is " << d->getName() << "\n";
+            std::cout << "The derived value is " << d->getValue() << "\n";
+            std::cout << "The base pointer's value is " << b->getValue() << "\n";
+        }
+
+        delete b;
+    }
+
+    void vf_static_cast(void)
+    {
+        Base *b = getObject(true);
+
+        if (b->getClassID() == DERIVED)
+        {
+            // We already proved b is pointing to a Derived object, so this should always succeed
+            Derived *d = static_cast<Derived*>(b);
+            std::cout << "The name of the Derived is: " << d->getName() << '\n';
+        }
+
+        delete b;
+    }
+
+    void vf_dynamic_cast_ref(void)
+    {
+        std::cout << "create Derived object apple\n";
+        Derived apple(1, "apple");
+
+        std::cout << "create reference b for Base apple\n";
+        Base &b = apple;
+
+        std::cout << "dynamic_cast b by reference instead of pointer\n";
+        // NOTE:
+        //   There is no error check for NULL pointer, but an exception of
+        //   std::bad_cast will be thrown, if it fails.
+        Derived d = dynamic_cast<Derived&>(b);
+
+        std::cout << "The derived name is " << d.getName() << "\n";
+    }
+    void fn(void)
+    {
+        std::cout << "dynamic cast\n";
+        vf_dynamic_cast();
+
+        std::cout << "\nstatic cast\n";
+        vf_static_cast();
+    }
+}
+
 int main()
 {
     run(1, &(Test1::fn)); // virtual function basis
@@ -709,4 +874,5 @@ int main()
     run(5, &(Test5::fn)); // pure virtual function and abstract base class
     run(6, &(Test6::fn)); // virtual base class
     run(7, &(Test7::fn)); // object slicing
+    run(8, &(Test8::fn)); // dynamic cast
 }
