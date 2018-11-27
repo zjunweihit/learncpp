@@ -13,6 +13,7 @@
  *   If no match for thrown exception type, go up layer until the main function,
  *   aborting the program.
  *   If it's match in catch block, program will go on after catch block
+ *   This process is called unwinding the stack.
  */
 namespace Test1
 {
@@ -60,7 +61,123 @@ namespace Test1
     }
 };
 
+/*
+ * === Test 2: unwind stack ===
+ *
+ * If an exception is thrown, it will unwind stack to caller and find if it's
+ * in a catch block, if so, check exception type, no match either, go on unwinding
+ * stack to caller's caller and go on, until the main funtion and abort the program.
+ * at last.
+ *
+ * If any catch block matches the exception, it will go on the caller function.
+ * OS will handle the uncatched exception with OS specific actions, error msg, or crash.
+ *
+ * Catch all exceptions:
+ *      catch (...) // catch-all handler
+ *   We can use it to save the state if the main function throw an exception.
+ *
+ * (Not recommended)
+ * Exception specifier: rarely used, may be not supported by compilers
+ *   a mechanism that allows us to use a function declaration to specify
+ *   whether a function may or will not throw exceptions.
+ *   e.g.
+ *   int doSomething() throw(); // does not throw exceptions
+ *   int doSomething() throw(double); // may throw a double
+ *   int doSomething() throw(...); // may throw anything
+ */
+namespace Test2
+{
+    void last() // called by third()
+    {
+        std::cout << "Start last\n";
+        std::cout << "--> last throwing int exception\n";
+        throw -1;
+        std::cout << "End last\n";
+
+    }
+
+    void third() // called by second()
+    {
+        std::cout << "Start third\n";
+        last();
+        std::cout << "End third\n";
+    }
+
+    void second() // called by first()
+    {
+        std::cout << "Start second\n";
+        try
+        {
+            third();
+        }
+        catch(double)
+        {
+             std::cerr << "second caught double exception\n";
+        }
+        std::cout << "End second\n";
+    }
+
+    void first() // called by main()
+    {
+        std::cout << "Start first\n";
+        try
+        {
+            second();
+        }
+        catch (int)
+        {
+             std::cerr << "first caught int exception\n";
+        }
+        catch (double)
+        {
+             std::cerr << "first caught double exception\n";
+        }
+        std::cout << "End first\n";
+    }
+
+    void ex_unwind(void)
+    {
+        std::cout << "Start main\n";
+        try
+        {
+            first();
+        }
+        catch (int)
+        {
+             std::cerr << "main caught int exception\n";
+        }
+        std::cout << "End main\n";
+    }
+
+    void ex_catch_all(void)
+    {
+        try
+        {
+            throw 5; // throw an int exception
+        }
+        catch (double x)
+        {
+            std::cout << "We caught an exception of type double: " << x << '\n';
+        }
+        catch (...) // catch-all handler
+        {
+            std::cout << "We caught an exception of an undetermined type\n";
+        }
+        //save_state();
+    }
+
+    void fn(void)
+    {
+        std::cout << "<<< unwind stack >>>\n";
+        ex_unwind();
+
+        std::cout << "\n<<< catch all >>>\n";
+        ex_catch_all();
+    }
+}
+
 int main()
 {
     run(1, &(Test1::fn)); // basic exception: throw, try, catch
+    run(2, &(Test2::fn)); // basic exception: throw, try, catch
 }
