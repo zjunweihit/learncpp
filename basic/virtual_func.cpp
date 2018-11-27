@@ -865,6 +865,75 @@ namespace Test8
     }
 }
 
+/*
+ * === Test 9: override << operator ===
+ *
+ * Friend function in Base class is not a member function and cannot be overrided
+ * as a virtual function.
+ *
+ * Set operator<< in Base class and call the virtual function to Derived class.
+ * It will not implement operator<< for each Derived class.
+ */
+
+namespace Test9
+{
+    class Base
+    {
+    public:
+        Base() {}
+
+        // Here's our overloaded operator<<
+        friend std::ostream& operator<<(std::ostream &out, const Base &b)
+        {
+            // Delegate printing responsibility for printing to member function print()
+            return b.print(out);
+        }
+
+        // We'll rely on member function print() to do the actual printing
+        // Because print is a normal member function, it can be virtualized
+        virtual std::ostream& print(std::ostream& out) const
+        {
+            out << "Base";
+            return out;
+        }
+    };
+
+    class Derived : public Base
+    {
+    public:
+        Derived() {}
+
+        // Here's our override print function to handle the Derived case
+        virtual std::ostream& print(std::ostream& out) const override
+        {
+            out << "Derived";
+            return out;
+        }
+    };
+
+    void fn(void)
+    {
+        std::cout << "Override << operator\n";
+
+        // call Base print() directly
+        std::cout << "\n<< b:\n";
+        Base b;
+        std::cout << b << '\n';
+
+        // Derived class has no operator<< , so call Base operator<<
+        // and compiler does an implicit upcase of Derived object to Base object
+        // Base.print() -> Derived.print()
+        std::cout << "\n<< d:\n";
+        Derived d;
+        std::cout << d << '\n'; // note that this works even with no operator<< that explicitly handles Derived objects
+
+        // Base.print() -> Derived.print()
+        std::cout << "\n<< refrence base:\n";
+        Base &bref = d;
+        std::cout << bref << '\n';
+    }
+}
+
 int main()
 {
     run(1, &(Test1::fn)); // virtual function basis
@@ -875,4 +944,5 @@ int main()
     run(6, &(Test6::fn)); // virtual base class
     run(7, &(Test7::fn)); // object slicing
     run(8, &(Test8::fn)); // dynamic cast
+    run(9, &(Test9::fn)); // override << operatior
 }
