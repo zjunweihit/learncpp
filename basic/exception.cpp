@@ -1,5 +1,7 @@
 #include "global.h"
 #include "math.h"
+#include <exception> // for std::exception
+#include <stdexcept> // for std::runtime_error
 
 /*
  * === Test 1: basic exception: throw, try, catch ===
@@ -261,9 +263,257 @@ namespace Test3
     }
 }
 
+/*
+ * === Test 4: exception class ===
+ *
+ * overloaded funtions may return different type of error code, since it requires
+ * different type of parameter it can take and return. But they can throw the same
+ * the same type of exception. e.g. array index(int)
+ *
+ * when constructor fails, its destructor will be never called, so it has to
+ * do cleanup before throw an exception to indicate the object failed to create.
+ *
+ * basic data types(e.g. int) may not indicate the problem clearly, then a exception
+ * class is required.
+ * Note: to catch the exception class by reference, in case copy or clicing of
+ *       class object.
+ * If an exception class inherits from an exception class, it should catch the
+ * derived class at first and then the base class.
+ * The compiler may info that, ^^
+ *   warning: exception of type 'Test4::Derived &' will be caught by earlier
+ *
+ * The good news is that all of these exception classes are derived from
+ * a single class called std::exception.
+ * its member function what() returns a C-style string description of the exception.
+ */
+namespace Test4
+{
+    class ArrayException1
+    {
+    private:
+        std::string m_error;
+
+    public:
+        ArrayException1(std::string error)
+            : m_error(error)
+        {
+        }
+
+         const char* getError() { return m_error.c_str(); }
+    };
+
+    class IntArray1
+    {
+    private:
+
+        int m_data[3]; // assume array is length 3 for simplicity
+    public:
+        IntArray1() {}
+
+        int getLength() { return 3; }
+
+        int& operator[](const int index)
+        {
+            if (index < 0 || index >= getLength())
+                throw ArrayException1("Invalid index");
+
+            return m_data[index];
+        }
+
+    };
+
+    void ex_class(void)
+    {
+        IntArray1 array;
+
+        try
+        {
+            int value = array[5];
+        }
+        // NOTE:
+        // exception handlers should catch class exception objects by reference
+        // instead of by value, avoiding copy and slicing a class object.
+        // By pointer is also not a good idea.
+        catch (ArrayException1 &exception)
+        {
+            std::cerr << "An array exception occurred (" << exception.getError() << ")\n";
+        }
+    }
+
+    class Base
+    {
+    public:
+        Base() {}
+    };
+
+    class Derived: public Base
+    {
+    public:
+        Derived() {}
+    };
+
+    void ex_class_inheriant_bad(void)
+    {
+        try
+        {
+            throw Derived();
+        }
+        // NOET:
+        // handlers for derived exception classes should be listed before those
+        // for base classes
+        // Compiler: (good boy^^)
+        // warning: exception of type 'Test4::Derived &' will be caught by earlier
+        catch (Base &base)
+        {
+            std::cout << "caught Base\n";
+        }
+        catch (Derived &derived)
+        {
+            std::cout << "caught Derived\n";
+        }
+    }
+    void ex_class_inheriant_good(void)
+    {
+        try
+        {
+            throw Derived();
+        }
+        // NOET:
+        // handlers for derived exception classes should be listed before those
+        // for base classes
+        catch (Derived &derived)
+        {
+            std::cout << "caught Derived\n";
+        }
+        catch (Base &base)
+        {
+            std::cout << "caught Base\n";
+        }
+    }
+
+    void ex_class_std(void)
+    {
+        try
+        {
+            // Your code using standard library goes here
+            // We'll trigger one of these exceptions intentionally for the sake of example
+                    std::string s;
+                    s.resize(-1); // will trigger a std::bad_alloc
+        }
+
+        // This handler will catch std::bad_alloc (and any exceptions derived from it) here
+        // it's not called actually?? that should be called firstly, exact exception
+        //catch (std::bad_alloc &exception)
+        //{
+        //        std::cerr << "You ran out of memory!" << '\n';
+        //}
+
+        // This handler will catch std::exception and all the derived exceptions too
+        // NOTE:
+        //   that this string is meant to be used for descriptive text only --
+        //   do not use it for comparisons, as it is not guaranteed to be the
+        //   same across compilers.
+        catch (std::exception &exception)
+        {
+            std::cerr << "Standard exception: " << exception.what() << '\n';
+        }
+    }
+
+    void ex_class_std_throw_std(void)
+    {
+        try
+        {
+            throw std::runtime_error("Bad things happened");
+        }
+        // This handler will catch std::exception and all the derived exceptions too
+        catch (std::exception &exception)
+        {
+            std::cerr << "Standard exception: " << exception.what() << '\n';
+        }
+    }
+
+    class ArrayException: public std::exception
+    {
+    private:
+        std::string m_error;
+
+    public:
+        ArrayException(std::string error)
+            : m_error(error)
+        {
+        }
+
+        // override what() const member function
+        // return the std::string as a const C-style string
+        // const char* what() const { return m_error.c_str(); } // pre-C++11 version
+        const char* what() const noexcept { return m_error.c_str(); } // C++11 version
+    };
+
+    class IntArray
+    {
+    private:
+
+        int m_data[3]; // assume array is length 3 for simplicity
+    public:
+        IntArray() {}
+
+        int getLength() { return 3; }
+
+        int& operator[](const int index)
+        {
+            if (index < 0 || index >= getLength())
+                throw ArrayException("Invalid index");
+
+            return m_data[index];
+        }
+
+    };
+
+    void ex_derived_class(void)
+    {
+        IntArray array;
+
+        try
+        {
+            int value = array[5];
+        }
+        catch (ArrayException &exception) // derived catch blocks go first
+        {
+            std::cerr << "An array exception occurred (" << exception.what() << ")\n";
+        }
+        catch (std::exception &exception)
+        {
+            std::cerr << "Some other std::exception occurred (" << exception.what() << ")\n";
+        }
+    }
+
+    void fn(void)
+    {
+        std::cout << "<<< exception class >>>\n";
+        ex_class();
+
+        std::cout << "\n<<< exception class inheriant >>>\n";
+        std::cout << "bad pratice\n";
+        ex_class_inheriant_bad();
+        std::cout << "good pratice\n";
+        ex_class_inheriant_good();
+
+        std::cout << "\n<<< exception class standard library >>>\n";
+        std::cout << "use std exception class to catch the exception\n";
+        ex_class_std();
+        std::cout << "throw std exception\n";
+        ex_class_std_throw_std();
+        ex_class_std_throw_std();
+
+        std::cout << "\n<<< derived exception class from std::exception >>>\n";
+        ex_derived_class();
+    }
+}
+
 int main()
 {
     run(1, &(Test1::fn)); // basic exception: throw, try, catch
     run(2, &(Test2::fn)); // unwind stack
     run(3, &(Test3::fn)); // rethrow an exception
+    run(4, &(Test4::fn)); // exception class
 }
