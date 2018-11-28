@@ -176,8 +176,94 @@ namespace Test2
     }
 }
 
+/*
+ * === Test 3: rethrowing exceptions ===
+ * Catch an exception, but just log error and pass it to the caller to handle.
+ *
+ * It's allowed to throw a new exception in catch block, although it looks wired.
+ * Throwing a new exception or throw the catched exception is not always a good
+ * way. Especially the excetpion is a class object(Base, Derived, copy initializtion
+ * and slicing may happen)
+ *
+ * When rethrowing the same exception, use the throw keyword by itself.
+ * It just rethrows the same exception without copies or slicing.
+ */
+namespace Test3
+{
+    class Base
+    {
+    public:
+        Base() {}
+        virtual void print() { std::cout << "Base"; }
+    };
+
+    class Derived: public Base
+    {
+    public:
+        Derived() {}
+        virtual void print() { std::cout << "Derived"; }
+    };
+
+    void ex_rethrow_exception_bad()
+    {
+        try
+        {
+            try
+            {
+                std::cout << "Throwing Derived\n";
+                throw Derived();
+            }
+            catch (Base& b)
+            {
+                std::cout << "Caught Base b, which is actually a ";
+                b.print();
+                std::cout << "\n";
+                throw b; // the Derived object gets sliced here
+            }
+        }
+        catch (Base& b)
+        {
+            std::cout << "Caught Base b, which is actually a ";
+            b.print();
+            std::cout << "\n";
+        }
+    }
+
+    void ex_rethrow_exception_good(void)
+    {
+        try
+        {
+            try
+            {
+                std::cout << "Throwing Derived\n";
+                throw Derived();
+            }
+            catch (Base& b)
+            {
+                std::cout << "Caught Base b, which is actually a ";
+                b.print();
+                std::cout << "\n";
+                throw; // rethrowing the object here
+            }
+        }
+        catch (Base& b)
+        {
+            std::cout << "Caught Base b, which is actually a ";
+            b.print();
+            std::cout << "\n";
+        }
+    }
+
+    void fn(void)
+    {
+        ex_rethrow_exception_bad();
+        ex_rethrow_exception_good();
+    }
+}
+
 int main()
 {
     run(1, &(Test1::fn)); // basic exception: throw, try, catch
-    run(2, &(Test2::fn)); // basic exception: throw, try, catch
+    run(2, &(Test2::fn)); // unwind stack
+    run(3, &(Test3::fn)); // rethrow an exception
 }
