@@ -570,6 +570,21 @@ namespace Test5
     }
 }
 
+// NOTE: Downside of exceptions
+//   1) in try block, print error message and DO clean up, like freeing resouces.
+//      e.g. delete pointer(or using smart pointer), close fd
+//   2) exceptions should never be thrown in destructors.
+//      it will cause program terminated immediately, better to write a message
+//      to a log file instead.
+//   3) It may cause a small performance price to pay. unwinding stack to catch
+//      an exception, or try check.
+//      moden CPU supports zero-cost exceptions, which has no cost if no error,
+//      but it causes more when an exception is thrown.
+//   4) When to use exceptions, all of below are true, to use it
+//      - The error being handled is likely to occur only *infrequently*.
+//      - The error is *serious* and execution could not continue otherwise
+//      - The error *cannot be handled* at the place where it occurs.
+//      - There *isn’t* a good alternative way to return an *error code back* to the caller.
 int main()
 {
     run(1, &(Test1::fn)); // basic exception: throw, try, catch
