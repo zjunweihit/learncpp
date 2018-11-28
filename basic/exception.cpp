@@ -510,10 +510,71 @@ namespace Test4
     }
 }
 
+/*
+ * === Test 5: function try block ===
+ *
+ * Catch the exception for an entire function.
+ *
+ * Note:
+ *   unlike normal catch blocks, if don't explicitly throw a new exception, or
+ *   rethrow the current exception, the exception will be implicitly rethrown up
+ *   the stack.
+ */
+namespace Test5
+{
+    class A
+    {
+    private:
+        int m_x;
+    public:
+        A(int x) : m_x(x)
+        {
+            if (x <= 0)
+                throw 1;
+        }
+    };
+
+    class B : public A
+    {
+    public:
+        // Note:
+        //   This try block includes initializer list util the end of the B function
+        B(int x) try : A(x) // note addition of try keyword here
+        {
+            throw 2; // it will be catched by later catch too
+        }
+        // Note:
+        //   Cannot define function between try and catch blocks.
+        //   It expects catch block here by compiler.
+        //   this is at same level of indentation as the function itself
+        catch (int e)
+        {
+            // Exceptions from member initializer list or constructor body are caught here
+            std::cerr << "Construction of A failed: " << e << "\n";
+            // Even if an exception isn't explicitly thrown here,
+            // the current exception will be implicitly rethrown to the caller.
+        }
+    };
+
+    void fn(void)
+    {
+        try
+        {
+            B b(0);
+        }
+        // by default, function try block will rethrow the exception to the caller here.
+        catch (int x)
+        {
+            std::cout << "Oops: " << x << "\n";
+        }
+    }
+}
+
 int main()
 {
     run(1, &(Test1::fn)); // basic exception: throw, try, catch
     run(2, &(Test2::fn)); // unwind stack
     run(3, &(Test3::fn)); // rethrow an exception
     run(4, &(Test4::fn)); // exception class
+    run(5, &(Test5::fn)); // function try block
 }
