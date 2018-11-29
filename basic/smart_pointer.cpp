@@ -161,7 +161,76 @@ namespace Test1
     }
 }
 
+/*
+ * === Test 2: R value ===
+ *
+ * l-value:
+ *   assignable memory address, when const was added, it were split into
+ *   modifiable l-value and non-modifiable l-value
+ * r-value:
+ *   non l-value, like literals(5), temporary values(x+1), anonymouse object(Fraction(5, 2))
+ *   cannot be assigned to. have express scope(die at the end of expression they are in)
+ *
+ * To support move semantics, C++11 introduces 3: pr-values, x-values, and gl-values.
+ *
+ * C++11
+ *   l-value reference(before C++11, only this)
+ *     - can be initialized(by l-value, r-value) and modified
+ *     - l-value reference to const, can be initialized only
+ *   r-value reference
+ *     - can be initialized(by r-value) and modified
+ *     - r-value reference to const, can be initialized only
+ *     - Note:
+ *       - extend r-value lifespan to the lifespan of r-value reference
+ *       - non-const r-value is allowed to be modified
+ *
+ * NOTE:
+ *   Should never return an r-value reference and an l-value reference.
+ *   In most caes, it will end up returning a hanging reference when referenced
+ *   object goes out of scope at the end of the function.
+ */
+namespace Test2
+{
+    // NOTE:
+    // when initializing an r-value with a literal, a temporary is constructed
+    // from the literal so that the reference is referencing a temporary object,
+    // not a literal value.
+    // r-value is not often used like this.
+    void sp_rvalue_init(void)
+    {
+        int &&rr = 1;
+        std::cout << rr << "\n";
+        rr = 2;
+        std::cout << rr << "\n";
+    } // rr goes out of scope here
+
+    void fun(const int &lref) // l-value arguments will select this function
+    {
+        std::cout << "l-value reference to const\n";
+    }
+
+    void fun(int &&rref) // r-value argument will select this function
+    {
+        std::cout << "r-value reference\n";
+    }
+
+    void sp_rvalue_func_param(void)
+    {
+        int x = 5;
+        fun(x); // l-value argument calls l-value version of function
+        fun(5); // r-value argument calls r-value version of function
+                // this is considered a better match than l-value const ref
+    }
+
+    void fn(void)
+    {
+        sp_rvalue_init();
+        sp_rvalue_func_param();
+    }
+}
+
 int main()
 {
     run(1, &(Test1::fn)); // smart pointer and move semantics
+    run(2, &(Test2::fn)); // r-value
 }
