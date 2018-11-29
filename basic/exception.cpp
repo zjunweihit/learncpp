@@ -358,19 +358,23 @@ namespace Test4
         {
             throw Derived();
         }
+        catch (Base &base)
+        {
+            std::cout << "uncomment me for the test, bad inheriant experience\n";
+        }
         // NOET:
         // handlers for derived exception classes should be listed before those
         // for base classes
         // Compiler: (good boy^^)
         // warning: exception of type 'Test4::Derived &' will be caught by earlier
-        catch (Base &base)
-        {
-            std::cout << "caught Base\n";
-        }
-        catch (Derived &derived)
-        {
-            std::cout << "caught Derived\n";
-        }
+        //catch (Base &base)
+        //{
+        //    std::cout << "caught Base\n";
+        //}
+        //catch (Derived &derived)
+        //{
+        //    std::cout << "caught Derived\n";
+        //}
     }
     void ex_class_inheriant_good(void)
     {
