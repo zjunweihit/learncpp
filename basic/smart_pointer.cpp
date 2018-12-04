@@ -229,8 +229,230 @@ namespace Test2
     }
 }
 
+/*
+ * === Test 3: move constructor and move assignment for r-value ===
+ *
+ * C++11 defines two new functions in service of move semantics:
+ *   a move constructor, and a move assignment operator.
+ *
+ * the copy flavors of these functions take a const l-value reference parameter
+ * the move flavors of these functions use non-const r-value reference parameters
+ *
+ * How to call move functions:
+ *    If defined move functions and those arguments are r-value, literal or
+ *    temporary value, move functions will be called.
+ *
+ *    If the class has no copy and move functions, move functions will be defined
+ *    by default as shadow copy. So we have to define move functions by ourselves.
+ *
+ * When both copy and move functions are available, C++11 do it smartly
+ *   when l-value is passed, call the copy function.
+ *   when r-value is passed, call the move function.
+ *
+ * Return variable is moved instead of copied, even though it's l-value.
+ *   The C++ specification has a special rule that says automatic objects returned
+ *   from a function by value can be moved even if they are l-values.
+ *   Because the return variable will be released when the function returns.
+ *
+ * Disable copy:
+ *   If it's desired to use move only, we can disable copy function as
+ *     Auto_ptr5(const Auto_ptr5& a) = delete;
+ *   Then the copy calling in the program will cause compiling error.
+ *   e.g. pass l-value
+ *
+ * ----------------------------------------------------------------------------
+ * copy constructor and copy assignment (case 1)
+ *
+ * do everything as copy
+ *   - temporary return value(some compiler will treat it as move)
+ *   - assign an object with another object
+ *
+ * result:
+ *   Resource acquired -> create res in generateResource3()
+ *   Resource acquired -> assign to mainres as copy, create a temporary Resource
+ *   Resource destroyed -> release temporary Resource after the assignment
+ *   Resource destroyed -> release mainres before leaves sp_copy()
+ * example result: (return value is doing copy as well)
+ *   Resource acquired -> create res in generateResource3()
+ *   Resource acquired -> do copy constructor before return res
+ *   Resource destroyed -> out of generateResource3(), release temporary return value
+ *   Resource acquired -> assign to mainres as copy, create a temporary Resource
+ *   Resource destroyed -> release temporary Resource after the assignment
+ *   Resource destroyed -> release mainres before leaves sp_copy()
+ *
+ * do r-value as move (case 2)
+ *   - temporary return value
+ *   - assign an object with another object
+ *
+ * result:
+ *   Resource acquired
+ *   Resource acquired
+ */
+namespace Test3
+{
+    template<class T>
+    class Auto_ptr3
+    {
+        T* m_ptr;
+    public:
+        Auto_ptr3(T* ptr = nullptr)
+            :m_ptr(ptr)
+        {
+        }
+
+        ~Auto_ptr3()
+        {
+            delete m_ptr;
+        }
+
+        // Copy constructor
+        // Do deep copy of a.m_ptr to m_ptr
+        Auto_ptr3(const Auto_ptr3& a)
+        {
+            m_ptr = new T;
+            *m_ptr = *a.m_ptr;
+        }
+
+        // Copy assignment
+        // Do deep copy of a.m_ptr to m_ptr
+        Auto_ptr3& operator=(const Auto_ptr3& a)
+        {
+            // Self-assignment detection
+            if (&a == this)
+                return *this;
+
+            // Release any resource we're holding
+            delete m_ptr;
+
+            // Copy the resource
+            m_ptr = new T;
+            *m_ptr = *a.m_ptr;
+
+            return *this;
+        }
+
+        T& operator*() const { return *m_ptr; }
+        T* operator->() const { return m_ptr; }
+        bool isNull() const { return m_ptr == nullptr; }
+    };
+
+    class Resource
+    {
+    public:
+        Resource() { std::cout << "Resource acquired\n"; }
+        ~Resource() { std::cout << "Resource destroyed\n"; }
+    };
+
+    Auto_ptr3<Resource> generateResource3()
+    {
+        Auto_ptr3<Resource> res(new Resource);
+        return res; // this return value will invoke the copy constructor
+    }
+
+    void sp_copy(void)
+    {
+        Auto_ptr3<Resource> mainres;
+        mainres = generateResource3(); // this assignment will invoke the copy assignment
+    }
+
+    // ------------------------------------------------------------------------
+    template<class T>
+    class Auto_ptr4
+    {
+        T* m_ptr;
+    public:
+        Auto_ptr4(T* ptr = nullptr)
+            :m_ptr(ptr)
+        {
+        }
+
+        ~Auto_ptr4()
+        {
+            delete m_ptr;
+        }
+
+        // Copy constructor
+        // Do deep copy of a.m_ptr to m_ptr
+        Auto_ptr4(const Auto_ptr4& a)
+        {
+            m_ptr = new T;
+            *m_ptr = *a.m_ptr;
+        }
+
+        // Move constructor
+        // Transfer ownership of a.m_ptr to m_ptr
+        Auto_ptr4(Auto_ptr4&& a)
+            : m_ptr(a.m_ptr)
+        {
+            a.m_ptr = nullptr; // NOTE: avoid later calling a dangling pointer
+        }
+
+        // Copy assignment
+        // Do deep copy of a.m_ptr to m_ptr
+        Auto_ptr4& operator=(const Auto_ptr4& a)
+        {
+            // Self-assignment detection
+            if (&a == this)
+                return *this;
+
+            // Release any resource we're holding
+            delete m_ptr;
+
+            // Copy the resource
+            m_ptr = new T;
+            *m_ptr = *a.m_ptr;
+
+            return *this;
+        }
+
+        // Move assignment
+        // Transfer ownership of a.m_ptr to m_ptr
+        Auto_ptr4& operator=(Auto_ptr4&& a)
+        {
+            // Self-assignment detection
+            if (&a == this)
+                return *this;
+
+            // Release any resource we're holding
+            delete m_ptr;
+
+            // Transfer ownership of a.m_ptr to m_ptr
+            m_ptr = a.m_ptr;
+            a.m_ptr = nullptr; // we'll talk more about this line below
+
+            return *this;
+        }
+
+        T& operator*() const { return *m_ptr; }
+        T* operator->() const { return m_ptr; }
+        bool isNull() const { return m_ptr == nullptr; }
+    };
+
+    Auto_ptr4<Resource> generateResource4()
+    {
+        Auto_ptr4<Resource> res(new Resource);
+        return res; // this return value will invoke the move constructor
+    }
+
+    void sp_move(void)
+    {
+        Auto_ptr4<Resource> mainres;
+        mainres = generateResource4(); // this assignment will invoke the move assignment
+    }
+
+    void fn(void)
+    {
+        std::cout << "<<< do copy >>>\n";
+        sp_copy();
+
+        std::cout << "<<< do move >>>\n";
+        sp_move();
+    }
+}
+
 int main()
 {
     run(1, &(Test1::fn)); // smart pointer and move semantics
     run(2, &(Test2::fn)); // r-value
+    run(3, &(Test3::fn)); // move constructor and move assignment for r-value
 }
