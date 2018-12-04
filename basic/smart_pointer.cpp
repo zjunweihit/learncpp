@@ -2,6 +2,7 @@
 #include "math.h"
 #include <exception> // for std::exception
 #include <stdexcept> // for std::runtime_error
+#include <utility> // std::move
 
 /*
  * === Test 1: smart pointer and move semantics ===
@@ -450,9 +451,55 @@ namespace Test3
     }
 }
 
+/*
+ * === Test 4: std::move for l-value ===
+ *
+ * In C++11, std::move converts input l-value to r-value reference, invoking
+ * move constructor or move assignment
+ *
+ * #include <utility>
+ *
+ * template<class T>
+ * void swap(T& a, T& b)
+ * {
+ *      T tmp { std::move(a) }; // invokes move constructor
+ *      a = std::move(b); // invokes move assignment
+ *      b = std::move(tmp); // invokes move assignment
+ * }
+ *
+ * Note:
+ *   - Don't to use std::move to persistent object don't want to modify.
+ *   - The state of objects applied std::move would be changed from previous one.
+ *   - After move, the object should be in well-defined state, null or zero
+ *     for later use or check.
+ *   - std::move can be used for sorting an array of elements by move swapping.
+ */
+namespace Test4
+{
+    void fn(void)
+    {
+        std::vector<std::string> v;
+        std::string str = "Knock";
+
+        std::cout << "Copying str to vector\n";
+        v.push_back(str); // calls l-value version of push_back, which copies str into the array element
+
+        std::cout << "str: " << str << '\n';
+        std::cout << "vector: " << v[0] << '\n';
+
+        std::cout << "\nMoving str to vector\n";
+
+        v.push_back(std::move(str)); // calls r-value version of push_back, which moves str into the array element
+
+        std::cout << "str: " << str << '\n';
+        std::cout << "vector:" << v[0] << ' ' << v[1] << '\n';
+    }
+}
+
 int main()
 {
     run(1, &(Test1::fn)); // smart pointer and move semantics
     run(2, &(Test2::fn)); // r-value
     run(3, &(Test3::fn)); // move constructor and move assignment for r-value
+    run(4, &(Test4::fn)); // std::move for l-value
 }
