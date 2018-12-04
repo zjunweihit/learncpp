@@ -1,8 +1,9 @@
 #include "global.h"
 #include "math.h"
-#include <exception> // for std::exception
-#include <stdexcept> // for std::runtime_error
-#include <utility> // std::move
+#include <exception>    // std::exception
+#include <stdexcept>    // std::runtime_error
+#include <utility>      // std::move
+#include <memory>       // std::unique_ptr
 
 /*
  * === Test 1: smart pointer and move semantics ===
@@ -496,10 +497,147 @@ namespace Test4
     }
 }
 
+/*
+ * === Test 5: std::unique_ptr ===
+ *
+ * [move only]
+ *
+ * Implement only move semantics inside, using a = std::move(b),
+ * copy semantics will cause compiling error, e.g. a = b.
+ *
+ * [access]
+ *
+ * Before accessing to a std::unique_ptr resouce, we should check if it has actually
+ * resouce. It implicitly casts std::unique_ptr to bool when check in if-statement.
+ *
+ * [array]
+ *
+ * Unlike std::auto_ptr, std::unique_ptr knows whether to use scalar delete
+ * or array delete.
+ * NOTE: std::array and std::vector are better than std::unique_ptr
+ *       (fixed/dynamic) array or C-string
+ *
+ * [std::make_unique]
+ *
+ * C++14 uses it to create unique pointer simply, optional, but recommended
+ * Furthermore it resolves an exception safety issue that can result from
+ * C++ leaving the order of evaluation for function arguments unspecified.
+ * e.g.
+ * class Fraction
+ * { ...
+ *      Fraction(int numerator = 0, int denominator = 1) :
+ *          m_numerator(numerator), m_denominator(denominator)
+ * }
+ * // Create a single dynamically allocated Fraction with numerator 3 and denominator 5
+ *  std::unique_ptr<Fraction> f1 = std::make_unique<Fraction>(3, 5);
+ *
+ * // Create a dynamically allocated array of Fractions of length 4
+ * // We can also use automatic type deduction to good effect here
+ * auto f2 = std::make_unique<Fraction[]>(4);
+ *
+ * [The exception safety issue]
+ *
+ * some_function(std::unique_ptr<T>(new T), function_that_can_throw_exception());
+ * create new T and call function_that_can_throw_exception(), throwing an exception.
+ * T will not be deallocated. Because smart pointer std::unique_ptr is not created yet.
+ *
+ * But std::make_unique makes object T and std::unique_ptr in side itself
+ *
+ * [return value]
+ *
+ * In functino return value, if the value is not assigned to anyone, the temporary
+ * return value will be out of scope and released automatically. If it's assigned
+ * to someone, it will call move assignment.
+ *
+ * [pass std::unique_ptr to a function]
+ *
+ * Note: copy is disabled, so move value to the function passing the value
+ * pass by value, the function will get the moved value
+ * pass by reference, the caller may change the object after calling the function
+ *
+ * // The function only uses the resource, so we'll accept a pointer to the resource,
+ * // not a reference to the whole std::unique_ptr<Resource>
+ * void useResource(Resource *res)
+ * { ... }
+ *
+ * auto ptr = std::make_unique<Resource>();
+ * useResource(ptr.get()); // note: get() used here to get a pointer to the Resource
+ *
+ * [std::unique_ptr to a class]
+ *
+ * it works as a memboer of a class, it will be destroyed when the class object
+ * is destroyed. However, if the class object is dynamically allocated, the object
+ * is risky not being properly deallocated, in which case even a smart pointer won't help.
+ *
+ * [misusing]
+ *
+ * Don't share the same resource
+ * e.g.
+ *   Resource *res = new Resource;
+ *   std::unique_ptr<Resource> res1(res);
+ *   std::unique_ptr<Resource> res2(res);
+ *
+ * Don't delete the resouce from std::unique_ptr, which will delete it again,
+ * leading undefined behavior.
+ *
+ * Note:
+ *   std::make_unique() prevents both of the above cases from happening inadvertently.
+ */
+namespace Test5
+{
+    class Resource
+    {
+    private:
+        int m_value;
+    public:
+        Resource() { std::cout << "Resource acquired\n"; }
+        Resource(int value = 0)
+            : m_value(value)
+        {
+            std::cout << "Resource acquired\n";
+        }
+        ~Resource() { std::cout << "Resource destroyed\n"; }
+
+        // NOTE: print value that res is owning
+        friend std::ostream& operator<< (std::ostream& out, const Resource &res)
+        {
+            out << res.m_value;
+            return out;
+        }
+    };
+
+    void fn(void)
+    {
+        std::unique_ptr<Resource> res1(new Resource(5)); // Resource created here
+        std::unique_ptr<Resource> res2; // Start as nullptr
+
+        std::cout << "res1 is " << (static_cast<bool>(res1) ? "not null\n" : "null\n");
+        std::cout << "res2 is " << (static_cast<bool>(res2) ? "not null\n" : "null\n");
+        if (res1) // NOTE: use implicit cast to bool to ensure res contains a Resource
+            std::cout << "res1 value is " << *res1 << "\n";
+        if (res2)
+            std::cout << "res2 value is " << *res2 << "\n";
+
+        // res2 = res1; // NOTE: Won't compile: copy assignment is disabled
+        res2 = std::move(res1); // res2 assumes ownership, res1 is set to null
+
+        std::cout << "Ownership transferred\n";
+
+        std::cout << "res1 is " << (static_cast<bool>(res1) ? "not null\n" : "null\n");
+        std::cout << "res2 is " << (static_cast<bool>(res2) ? "not null\n" : "null\n");
+
+        if (res1)
+            std::cout << "res1 value is " << *res1 << "\n";
+        if (res2)
+            std::cout << "res2 value is " << *res2 << "\n";
+    } // Resource destroyed here when res2 goes out of scope
+}
+
 int main()
 {
     run(1, &(Test1::fn)); // smart pointer and move semantics
     run(2, &(Test2::fn)); // r-value
     run(3, &(Test3::fn)); // move constructor and move assignment for r-value
     run(4, &(Test4::fn)); // std::move for l-value
+    run(5, &(Test5::fn)); // std::unique_ptr
 }
