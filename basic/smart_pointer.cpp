@@ -3,7 +3,7 @@
 #include <exception>    // std::exception
 #include <stdexcept>    // std::runtime_error
 #include <utility>      // std::move
-#include <memory>       // std::unique_ptr
+#include <memory>       // std::unique_ptr, std::shared_ptr
 
 /*
  * === Test 1: smart pointer and move semantics ===
@@ -14,7 +14,7 @@
  * std::auto_ptr: avoid it
  *   Introduced in C++98, which is like Auto_ptr2, but with many problems.
  *   1) It implements move sematics through copy and assignment operator, so
- *      pass a std::auto_ptr by value to a function will cause resouce to get
+ *      pass a std::auto_ptr by value to a function will cause resource to get
  *      moved to function parameter, then caller will dereference a null pointer.
  *   2) always deletes its contents using non-array delete. memory leak.
  *   3) not working well with other classes in standard library, including
@@ -507,8 +507,8 @@ namespace Test4
  *
  * [access]
  *
- * Before accessing to a std::unique_ptr resouce, we should check if it has actually
- * resouce. It implicitly casts std::unique_ptr to bool when check in if-statement.
+ * Before accessing to a std::unique_ptr resource, we should check if it has actually
+ * resource. It implicitly casts std::unique_ptr to bool when check in if-statement.
  *
  * [array]
  *
@@ -577,7 +577,7 @@ namespace Test4
  *   std::unique_ptr<Resource> res1(res);
  *   std::unique_ptr<Resource> res2(res);
  *
- * Don't delete the resouce from std::unique_ptr, which will delete it again,
+ * Don't delete the resource from std::unique_ptr, which will delete it again,
  * leading undefined behavior.
  *
  * Note:
@@ -633,6 +633,107 @@ namespace Test5
     } // Resource destroyed here when res2 goes out of scope
 }
 
+/*
+ * === Test 6: std::shared_ptr ===
+ *
+ * multiple smart pointer could point to the same resource, it can track the
+ * number of users accessing to the resource. If any user is accessing to the
+ * resource, it won'twill be deallocated until the last user goes out of scope.
+ *
+ * Requires <memory> as std::unique_ptr
+ *
+ * NOTE:
+ *   Aways do a copy of std::shared_ptr, if need to share the same resource.
+ *   rather than share the resouce directly.
+ *
+ * Like std::make_unique(C++14), std::make_shared(C++11) is used to create
+ * std::shared_ptr.
+ *
+ * [a deep look at std::shared_ptr]
+ *
+ * std::shared_ptr has two pointers
+ *   - one points to the resource, passed in
+ *   - the other points to the control block, created by constructor
+ * If pass the resource to the std::shared_ptr, each shared pointer's individual
+ * control block will think it's belong to itself. But if pass the shared pointer,
+ * copy assignment, the data in control block will be updated to indicate there
+ * are an addtional shared pointer co-managing the resource.
+ *
+ * [convert std::unique_ptr to std::shared_ptr]
+ *
+ * std::unique_ptr could be assigned to std::shared_ptr via a special constructor
+ * accepting a std::unique_ptr r-value. Then std::unique_ptr moves to std::shared_ptr.
+ * But not vice versa. So a function is better to return std::unique_ptr, that
+ * could be assigned to a std::shared_ptr.
+ *
+ * [The perils of std::shared_ptr]
+ *
+ * If a std::unique_ptr doesn't delete the resource after initialization dynamically
+ * allocating, the std::shared_ptr could not manage the resource properly.
+ * Now we have to take care of any shared pointer sharing the resource.
+ *
+ * [Array]
+ *
+ * In C++14 and earlier, std::shared_ptr does not have proper support for
+ * managing arrays, and should not be used to manage a C-style array.
+ * As of C++17, std::share_ptr does have support for arrays. However,
+ * as of C++17, std::make_shared is still lacking proper support for arrays,
+ * and should not be used to create shared arrays. This will likely be addressed
+ * in C++20.
+ */
+namespace Test6
+{
+    class Resource
+    {
+    public:
+        Resource() { std::cout << "Resource acquired\n"; }
+        ~Resource() { std::cout << "Resource destroyed\n"; }
+    };
+
+    void sp_shared_ptr(void)
+    {
+        // allocate a Resource object and have it owned by std::shared_ptr
+        Resource *res = new Resource;
+        std::shared_ptr<Resource> ptr1(res);
+        {
+            // use copy initialization to make another std::shared_ptr pointing to the same thing
+            // NOTE: initialized by a shared pointer, instead of Resource
+            std::shared_ptr<Resource> ptr2(ptr1);
+
+            // If so, it will free the resource when ptr2 is out of scope.
+            // then later ptr1 goes out of scope, the deallocation of the same
+            // resource will crash the program.
+            //std::shared_ptr<Resource> ptr2(res);
+
+            std::cout << "Killing one shared pointer\n";
+        } // ptr2 goes out of scope here, but nothing happens
+
+        std::cout << "Killing another shared pointer\n";
+    } // ptr1 goes out of scope here, and the allocated Resource is destroyed
+
+    void sp_make_shared(void)
+    {
+        // allocate a Resource object and have it owned by std::shared_ptr
+        auto ptr1 = std::make_shared<Resource>();
+        {
+            auto ptr2 = ptr1; // create ptr2 using copy initialization of ptr1
+
+            std::cout << "Killing one shared pointer\n";
+        } // ptr2 goes out of scope here, but nothing happens
+
+        std::cout << "Killing another shared pointer\n";
+    } // ptr1 goes out of scope here, and the allocated Resource is destroyed
+
+    void fn(void)
+    {
+        std::cout << "<<< shared pointer >>>\n";
+        sp_shared_ptr();
+
+        std::cout << "<<< make shared pointer >>>\n";
+        sp_make_shared();
+    }
+}
+
 int main()
 {
     run(1, &(Test1::fn)); // smart pointer and move semantics
@@ -640,4 +741,5 @@ int main()
     run(3, &(Test3::fn)); // move constructor and move assignment for r-value
     run(4, &(Test4::fn)); // std::move for l-value
     run(5, &(Test5::fn)); // std::unique_ptr
+    run(6, &(Test6::fn)); // std::shared_ptr
 }
