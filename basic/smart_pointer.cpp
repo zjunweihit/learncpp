@@ -676,7 +676,7 @@ namespace Test5
  *
  * In C++14 and earlier, std::shared_ptr does not have proper support for
  * managing arrays, and should not be used to manage a C-style array.
- * As of C++17, std::share_ptr does have support for arrays. However,
+ * As of C++17, std::shared_ptr does have support for arrays. However,
  * as of C++17, std::make_shared is still lacking proper support for arrays,
  * and should not be used to create shared arrays. This will likely be addressed
  * in C++20.
@@ -734,6 +734,107 @@ namespace Test6
     }
 }
 
+/*
+ * === Test 7: std::weak_ptr ===
+ *
+ * [Circular reference]
+ *
+ * also called cyclical reference or cycle. is a series of reference where each
+ * object references the next, and the last object references back to the first.
+ * It can be pointer, unique IDs and other means of identifying specific object.
+ * (for shared pointers, the reference is a pointer.
+ *
+ * [std::weak_ptr]
+ *
+ * A std::weak_ptr can observe and access the same object as a std::shared_ptr
+ * (or other std::weak_ptr) but it is not considered an owner and taken into
+ * acount for the object owning.
+ *
+ * std::weak_ptr is not directly used, but converted into a std::shared_ptr
+ * by lock() member function.
+ *
+ * [A reductive case]
+ *
+ * Although it's less possible to use that. A std::shared_ptr points to itself.
+
+   class Resource
+   {
+   public:
+   std::shared_ptr<Resource> m_ptr; // initially created empty
+   };
+   auto ptr1 = std::make_shared<Resource>();
+   ptr1->m_ptr = ptr1; // m_ptr is now sharing the Resource that contains it
+
+ *
+ *
+ */
+namespace Test7
+{
+    class Person
+    {
+        std::string m_name;
+
+        //std::shared_ptr<Person> m_partner; // initially created empty
+
+        std::weak_ptr<Person> m_partner; // note: This is now a std::weak_ptr
+
+    public:
+
+        Person(const std::string &name) : m_name(name)
+        {
+            std::cout << m_name << " created\n";
+        }
+        ~Person()
+        {
+            std::cout << m_name << " destroyed\n";
+        }
+
+        friend bool partnerUp(std::shared_ptr<Person> &p1, std::shared_ptr<Person> &p2)
+        {
+            if (!p1 || !p2)
+                return false;
+
+            p1->m_partner = p2;
+            p2->m_partner = p1;
+
+            std::cout << p1->m_name << " is now partnered with " << p2->m_name << "\n";
+
+            return true;
+        }
+
+        // NOTE: use lock() to convert weak_ptr to shared_ptr for access
+        const std::shared_ptr<Person> getPartner() const { return m_partner.lock(); } 
+
+        const std::string& getName() const { return m_name; }
+    };
+
+    // lucy -> Lucy
+    // ricky.m_partner -> Lucy
+    // ricky -> Ricky
+    // lucy.m_partner -> Ricky
+    //
+    // [std::shared_ptr<Person> m_partner]
+    //
+    // when lucy goes out of scope, lucy is destroyed, but don's deallocate Lucy
+    // as ricky.m_partner is pointing Lucy.
+    // So does Ricky. At last both Lucy and Ricky are not deallocated.
+    //
+    // [std::weak_ptr<Person> m_partner] could save it
+    //
+    // it can observe and access the object as std::shared_ptr but not an owner.
+    void fn(void)
+    {
+        auto lucy = std::make_shared<Person>("Lucy");
+        auto ricky = std::make_shared<Person>("Ricky");
+
+        partnerUp(lucy, ricky);
+
+        // NOTE: get std::weak_ptr converted to std::shared_ptr for access
+        auto partner = ricky->getPartner();
+        std::cout << ricky->getName() << "'s partner is: " << partner->getName() << '\n';
+    }
+}
+
 int main()
 {
     run(1, &(Test1::fn)); // smart pointer and move semantics
@@ -742,4 +843,5 @@ int main()
     run(4, &(Test4::fn)); // std::move for l-value
     run(5, &(Test5::fn)); // std::unique_ptr
     run(6, &(Test6::fn)); // std::shared_ptr
+    run(7, &(Test7::fn)); // std::weak_ptr
 }
