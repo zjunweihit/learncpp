@@ -28,6 +28,7 @@
  empty()            Returns a boolean indicating whether the string is empty
  length(), size()   Returns the number of characters in string
  max_size()         Returns the maximum string size that can be allocated
+ reserve()          Expand or shrink the capacity of the string
 
  [], at()           Accesses the character at a particular index
 
@@ -62,7 +63,7 @@
  */
 
 /*
- * === Test 1: smart pointer and move semantics ===
+ * === Test 1: string constructor ===
  */
 namespace Test1
 {
@@ -134,7 +135,56 @@ namespace Test1
     }
 }
 
+/*
+ * === Test 2: string length and capacity ===
+ */
+namespace Test2
+{
+    void fn(void)
+    {
+        std::cout << "<<< string length and capacity >>>\n";
+
+        std::cout << "string: 01234" << "\n";
+        std::string str("01234");
+
+        std::cout << "length(): " << str.length() << "\n";
+        std::cout << "size(): " << str.size() << "\n";
+        std::cout << "empty(): " << (str.empty() ? "true" : "false") << "\n";
+
+        // NOTE:
+        // Returns the maximum number of characters that a string is allowed to have.
+        // This value will vary depending on operating system and system architecture.
+        std::cout << "max_size(): " << str.max_size() << "\n";
+
+        // NOTE:
+        // How much memory the string allocated to hold its contents, excluding NULL terminator
+        // 1) Reallocating is expensive, and has to copy the contents to new memory.
+        //    So allocate a bit more for performance.
+        // 2) after string is reallocated, all pointers and references and
+        //    iterators to the string is invalid.
+        std::cout << "capacity(): " << str.capacity() << "\n";
+
+        std::cout << "\nadd 11 charactors\n";
+        str += "0123456789a";
+        std::cout << "size(): " << str.size() << "\n";
+        std::cout << "capacity(): " << str.capacity() << "\n";
+
+        std::cout << "\nreserve 200\n";
+        str.reserve(200);
+        std::cout << "size(): " << str.size() << "\n";
+        std::cout << "capacity(): " << str.capacity() << "\n";
+
+        std::cout << "\nreserve to fit the string\n";
+        // NOTE:
+        // shrink the capacity to fit the string size
+        str.reserve();
+        std::cout << "size(): " << str.size() << "\n";
+        std::cout << "capacity(): " << str.capacity() << "\n";
+    }
+}
+
 int main()
 {
     run(1, &(Test1::fn)); // string constructor
+    run(2, &(Test2::fn)); // string length and capacity
 }
