@@ -274,6 +274,47 @@ namespace Test5
     }
 }
 
+/*
+ * === Test 6: string inserting ===
+ */
+namespace Test6
+{
+    void fn(void)
+    {
+        std::cout << "<<< string inserting >>>\n";
+        std::string str("0123456789");
+        std::cout << "string: 0123456789\n";
+
+        // insert before the str[index], index from 0
+        str.insert(0, "A");
+        std::cout << "insert(0, \"A\"): " << str << '\n';
+
+        // --- reset the str ---
+        str = "0123456789";
+        std::cout << "\nstring: " << str << "\n";
+
+        // insert before the str[index], index from 0
+        str.insert(10, "A");
+        std::cout << "insert(10, \"A\"): " << str << '\n';
+
+        // --- reset the str ---
+        str = "0123456789";
+        std::cout << "\nstring: " << str << "\n";
+
+        // insert before the str[index], index from 0
+        str.insert(3, "A");
+        std::cout << "insert(3, \"A\"): " << str << '\n';
+
+        // --- reset the str ---
+        str = "0123456789";
+        std::cout << "\nstring: " << str << "\n";
+
+        // insert "abcdefg" from index [3, 5), index start from 0
+        str.insert(2, "abcdefg", 3, 2); 
+        std::cout << "insert(2, \"abcdefg\", 3, 2): " << str << '\n';
+    }
+}
+
 int main()
 {
     run(1, &(Test1::fn)); // string constructor
@@ -281,4 +322,5 @@ int main()
     run(3, &(Test3::fn)); // string access and converting to C-style array
     run(4, &(Test4::fn)); // string assign and swap
     run(5, &(Test5::fn)); // string appending
+    run(6, &(Test6::fn)); // string inserting
 }
