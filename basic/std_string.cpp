@@ -40,6 +40,7 @@
                     exception.
 
  +=, append(), push_back()   Concatenates characters to end of the string
+                    push_back() appends char, not string
  insert()           Inserts characters at an arbitrary index in string
  clear()            Delete all characters in the string
  erase()            Erase characters at an arbitrary index in string
@@ -249,10 +250,35 @@ namespace Test4
     }
 }
 
+/*
+ * === Test 5: string appending ===
+ */
+namespace Test5
+{
+    void fn(void)
+    {
+        std::cout << "<<< string appending >>>\n";
+
+        std::string str("one");
+        std::cout << str << '\n';
+
+        str += " two";
+        std::cout << "appended by +=:\n" << str << '\n';
+
+        str.append(" three");
+        std::cout << "appended by str.append():\n" << str << '\n';
+
+        str += ' ';
+        str.push_back('4');
+        std::cout << "appended by str.push_back():\n" << str << '\n';
+    }
+}
+
 int main()
 {
     run(1, &(Test1::fn)); // string constructor
     run(2, &(Test2::fn)); // string length and capacity
     run(3, &(Test3::fn)); // string access and converting to C-style array
     run(4, &(Test4::fn)); // string assign and swap
+    run(5, &(Test5::fn)); // string appending
 }
