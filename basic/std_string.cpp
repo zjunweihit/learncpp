@@ -1,5 +1,6 @@
 #include "global.h"
 #include <sstream>
+#include <string.h>
 
 /*
  * Overview
@@ -31,6 +32,8 @@
  reserve()          Expand or shrink the capacity of the string
 
  [], at()           Accesses the character at a particular index
+                    at() is slower and checks if index is out of range,
+                    throws out_of_range exception when passing in a invalid index
 
  =, assign()        Assigns a new value to the string
  +=, append(), push_back()   Concatenates characters to end of the string
@@ -183,8 +186,40 @@ namespace Test2
     }
 }
 
+/*
+ * === Test 3: string access and converting to C-style array ===
+ */
+namespace Test3
+{
+    void fn(void)
+    {
+        std::cout << "<<< string access and converting to C-style array >>>\n";
+
+        std::string str("0123456789");
+        std::cout << "string: 0123456789" << "\n";
+        str[5] = 'A';
+        str.at(6) = 'B';
+        std::cout << "index 5->A, 6->B: " << str << "\n";
+
+        std::cout << "strlen as C-style array: " << strlen(str.c_str()) << "\n";
+
+        std::cout << "using data() for comparison:\n";
+        const char *str1 = "01234AB789";
+        if (memcmp(str.data(), str1, str.length()) == 0)
+            std::cout << "The string is 01234AB789 now\n";
+        else
+            std::cout << "The string is not 01234AB789 now\n";
+
+        std::cout << "copy(): AB to a new char array\n";
+        char str2[10];
+        int length = str.copy(str2, 2, 5);
+        str2[length] = '\0'; // NOTE: make NULL terminator for the char array
+        std::cout << str2 << "\n";
+    }
+}
 int main()
 {
     run(1, &(Test1::fn)); // string constructor
     run(2, &(Test2::fn)); // string length and capacity
+    run(3, &(Test3::fn)); // string access and converting to C-style array
 }
