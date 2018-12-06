@@ -4,14 +4,14 @@ This repo includes cpp examples and practice for fun :)
 
 # ToDo list
 
-* [ ] basic cpp functionality
+* [ ] basic cpp functionality, referring to https://www.learncpp.com
   - [ ] operator overloading
-  - [ ] inheritance
-  - [ ] vector
-  - [ ] virtual functions
-  - [ ] templates
-  - [ ] exceptions
-  - [ ] string
+  - [X] inheritance
+  - [X] vector
+  - [X] virtual functions
+  - [X] templates
+  - [X] exceptions
+  - [X] string
   - [ ] I/O stream
 - [ ] tree
 - [ ] sort
