@@ -36,6 +36,9 @@
                     throws out_of_range exception when passing in a invalid index
 
  =, assign()        Assigns a new value to the string
+                    assign() checks index, if it's out of range, throws out_of_range
+                    exception.
+
  +=, append(), push_back()   Concatenates characters to end of the string
  insert()           Inserts characters at an arbitrary index in string
  clear()            Delete all characters in the string
@@ -217,9 +220,39 @@ namespace Test3
         std::cout << str2 << "\n";
     }
 }
+
+/*
+ * === Test 4: string access and converting to C-style array ===
+ */
+namespace Test4
+{
+    void fn(void)
+    {
+        std::cout << "<<< string assign and swap >>>\n";
+        std::string str1;
+        str1.assign("111");
+        std::cout << "str1: " << str1 << '\n';
+
+        std::string str2;
+        str2.assign("222");
+        std::cout << "str2: " << str2 << '\n';
+
+        std::cout << "\ndo swap():\n";
+        swap(str1, str2);
+        std::cout << "str1: " << str1 << '\n';
+        std::cout << "str2: " << str2 << '\n';
+
+        std::cout << "\ndo str.swap():\n";
+        str1.swap(str2);
+        std::cout << "str1: " << str1 << '\n';
+        std::cout << "str2: " << str2 << '\n';
+    }
+}
+
 int main()
 {
     run(1, &(Test1::fn)); // string constructor
     run(2, &(Test2::fn)); // string length and capacity
     run(3, &(Test3::fn)); // string access and converting to C-style array
+    run(4, &(Test4::fn)); // string assign and swap
 }
