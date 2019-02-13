@@ -22,6 +22,9 @@ target_link_libraries(smart_pointer global)
 add_executable(std_string std_string.cpp)
 target_link_libraries(std_string global)
 
+add_executable(vector vector.cpp)
+target_link_libraries(vector global)
+
 # matches AppleClang and Clang
 if (CMAKE_COMPILER_IS_CLANGXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
