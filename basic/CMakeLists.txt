@@ -28,6 +28,8 @@ if (CMAKE_COMPILER_IS_CLANGXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     message(STATUS "optional:-std=c++11")
 endif()
 
+# enable: cmake -DCMAKE_BUILD_TYPE=Debug
 if (CMAKE_BUILD_TYPE STREQUAL Debug)
     add_definitions(-DDEBUG)
+    message(STATUS "optional:-DDEBUG")
 endif()
