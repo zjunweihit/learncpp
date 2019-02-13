@@ -157,10 +157,31 @@ namespace Test4
     }
 }
 
+/*
+ * === Test 5: vector access ===
+ */
+namespace Test5
+{
+    void fn(void)
+    {
+        std::cout << "<<< vector access >>>\n";
+
+        std::vector<int> array = {1, 2, 3, 4};
+        int *p = array.data();
+
+        Test4::vec_print(array);
+
+        std::cout << "*p++ is "<< *p++ << "\n";
+        std::cout << "*p is "<< *p << "\n";
+        std::cout << "*p[1] is "<< p[1] << "\n";
+    }
+}
+
 int main()
 {
     run(1, &(Test1::fn)); // vector initialization
     run(2, &(Test2::fn)); // vector size
     run(3, &(Test3::fn)); // vector traversing
     run(4, &(Test4::fn)); // vector insert
+    run(5, &(Test5::fn)); // vector access
 }
