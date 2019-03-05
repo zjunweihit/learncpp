@@ -2,6 +2,20 @@
 #include <functional>
 
 /*
+ * overload(重载)
+ *   same function name, but different parameters
+ *   in a same class
+ *
+ * overriding(覆盖)
+ *   same function name and parameters
+ *   base class should be virtual
+ *   in different class(base, derived)
+ *
+ * ref:
+ *   https://stackoverflow.com/questions/429125/override-and-overload-in-c
+ *   http://www.codeceo.com/article/cpp-overload-inherit-override.html
+ */
+/*
  * === Test 1: virutal function and polymorphism ===
  *
  * 1. Calling a virtual function resolves to the most-derived function that
