@@ -67,26 +67,26 @@ namespace Test2
         int m_protected;
     };
 
-    // Public inheritance
-    // public -> inaccessible
-    // private -> inaccessible
-    // protected -> inaccessible
+    // base      => private derived
+    // public    -> private
+    // private   -> inaccessible
+    // protected -> private
     class D2_Pri : private Base // private inheritance
     {
     public:
         D2_Pri()
         {
-            //m_public = 1;
+            m_public = 1;
             //m_private = 2;
-            //m_protected = 3;
+            m_protected = 3;
         }
     };
 
-    // Public inheritance
-    // public -> public
-    // private -> inaccessible
+    // base       => protected derived
+    // public     -> protected
+    // private    -> inaccessible
     // protected -> protected
-    class D2_Pro : private Base // protected inheritance
+    class D2_Pro : protected Base // protected inheritance
     {
     public:
         D2_Pro()
@@ -97,12 +97,12 @@ namespace Test2
         }
     };
 
-    // Public inheritance
-    // public -> protected
-    // private -> inaccessible
+    // base      => public derived
+    // public    -> public
+    // private   -> inaccessible
     // protected -> protected
 
-    class D2_Pub : private Base // public inheritance
+    class D2_Pub : public Base // public inheritance
     {
     public:
         D2_Pub()
