@@ -171,6 +171,9 @@ namespace Test2
     // but that there are no template parameters (since in this case,
     // we’re explicitly specifying all of the types).
     // Some compilers may allow you to omit this, but it’s proper to include it.
+    //
+    // By default, it will go through above print() function, if it's double type
+    // below function will be called as scientific format.
     template <>
     void Storage<double>::print(void)
     {

@@ -20,9 +20,9 @@
  *
  * 1. Calling a virtual function resolves to the most-derived function that
  *    exists between the base and derived class, known as polymorphism.
- * 2. A derived function is considered a match if it has the same signature
+ * 2. A derived function is considered a match if it has the *same signature*
  *    (name, parameter types, const type) and return type, called override.
- * 3. Works for reference and pointer
+ * 3. Works for *reference* and pointer
  * 4. If a function is marked as virtual, all matching overrides are also
  *    considered virtual, even if they are not explicitly marked as such
  * 5. Don't set virtual function to constructor and destructor
@@ -389,6 +389,20 @@ namespace Test4 // compiling only for now
     // |                                    +--------------+  |
     // |                                                      |
     // +------------------------------------------------------+
+
+
+    //
+    // int main()
+    // {
+    //     D1 d1;
+    //     Base *dPtr = &d1;
+    // }
+    //
+    // Note that because dPtr is a base pointer, it only points to the Base portion of d1.
+    // However, also note that *__vptr is in the Base portion of the class,
+    // so dPtr has access to this pointer. Finally, note that dPtr->__vptr points
+    // to the D1 virtual table! Consequently, even though dPtr is of type Base,
+    // it still has access to D1’s virtual table (through __vptr).
 }
 
 /*
@@ -876,6 +890,9 @@ namespace Test8
 
         std::cout << "\nstatic cast\n";
         vf_static_cast();
+
+        std::cout << "\ndynamic cast by reference\n";
+        vf_dynamic_cast_ref();
     }
 }
 
