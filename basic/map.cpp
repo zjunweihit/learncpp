@@ -3,7 +3,7 @@
 
 /*
  * Map/Multimap
- * 
+ *
  * Constructs a group of <key, value> elements.
  * Map doesn't contain duplicat key, but Multimap does.
  *
@@ -24,8 +24,8 @@ namespace Test1
     // Could it be done by template??
     void print_map(std::map<int, std::string> &m)
     {
-        std::map<int, std::string>::iterator p;
         std::cout << "list map:\n";
+        //std::map<int, std::string>::iterator p;
         //for (p = m.begin(); p != m.end(); ++p) {
         //    std::cout << "  <" << p->first << ", "
         //              << p->second << ">" << std::endl;
@@ -35,7 +35,6 @@ namespace Test1
             std::cout << "  <" << p.first << ", "
                       << p.second << ">" << std::endl;
         }
-
     }
 
     void map_test(void)
@@ -84,18 +83,11 @@ namespace Test2
     // Could it be done by template??
     void print_multimap(std::multimap<int, std::string> &m)
     {
-        std::multimap<int, std::string>::iterator p;
         std::cout << "list map:\n";
-        //for (p = m.begin(); p != m.end(); ++p) {
-        //    std::cout << "  <" << p->first << ", "
-        //              << p->second << ">" << std::endl;
-        //}
-        // same as above [begin, end)
         for (auto& p : m) {
             std::cout << "  <" << p.first << ", "
                       << p.second << ">" << std::endl;
         }
-
     }
 
     void multimap_test(void)
@@ -124,11 +116,18 @@ namespace Test2
         m.erase(2);
         print_multimap(m); // by reference
 
+        // map.find
         std::cout << "remove an interator by find, remove the 1st key: 1\n";
-        std::map<int, std::string>::iterator p = m.find(1);
+        std::multimap<int, std::string>::iterator p = m.find(1);
         if (p != m.end()) // it's found
             m.erase(p);
         print_multimap(m); // by reference
+
+        std::cout << "show all value whose key is 1\n";
+        // same as below and m.upper_bound(1) == <5, e> not <1, f>, aka the next(end) of key 1.
+        // for (std::multimap<int, std::string>::iterator p = m.lower_bound(1); p != m.upper_bound(1); ++p)
+        for (auto p = m.lower_bound(1); p != m.upper_bound(1); ++p)
+            std::cout << p->first << " => " << p->second << std::endl;
     }
 
     void fn(void)
