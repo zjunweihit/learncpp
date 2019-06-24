@@ -577,7 +577,7 @@ namespace Test4
  *   std::unique_ptr<Resource> res1(res);
  *   std::unique_ptr<Resource> res2(res);
  *
- * Don't delete the resource from std::unique_ptr, which will delete it again,
+ * Don't delete the resource from std::unique_ptr, who will delete it again,
  * leading undefined behavior.
  *
  * Note:
@@ -606,7 +606,28 @@ namespace Test5
         }
     };
 
-    void fn(void)
+    void sp_unique_ptr(void)
+    {
+        std::unique_ptr<int> p1(new int(8));
+        std::unique_ptr<int> p2(new int(6));
+        //std::unique_ptr<int> p3(p1);  // Error, Init cannot copy unique_ptr
+        //std::unique_ptr<int> p4 = p1; // Error, Init cannot copy unique_ptr
+        std::cout << "get p1 value " << *(p1.get()) << "\n";
+        std::cout << "get p1 value " << *p1 << "\n";
+        std::cout << "p1.get() returns p1 pointer, equals p1\n";
+
+        // set internal pointer null, return pointed object, which SHOULD be released manually.
+        int *tmp = p1.release();
+        delete tmp;
+
+        // set internal pointer null, free pointed object.
+        p2.reset();
+        std::cout << "reset p2 NULL: " << (static_cast<bool>(p2) ? "not null\n" : "null\n");
+        p2.reset(new int(9));
+        std::cout << "reset p2 value 9: " << *p2 << "\n";
+    }
+
+    void sp_unique_ptr_move(void)
     {
         std::unique_ptr<Resource> res1(new Resource(5)); // Resource created here
         std::unique_ptr<Resource> res2; // Start as nullptr
@@ -631,6 +652,15 @@ namespace Test5
         if (res2)
             std::cout << "res2 value is " << *res2 << "\n";
     } // Resource destroyed here when res2 goes out of scope
+
+    void fn(void)
+    {
+        std::cout << "<<< unique pointer >>>\n";
+        sp_unique_ptr();
+
+        std::cout << "<<< move unique_ptr >>>\n";
+        sp_unique_ptr_move();
+    }
 }
 
 /*
